@@ -114,10 +114,10 @@ If you use this code in your work, please cite it as:
 ## Citation
 
 @software{yaghi2026ucasedml,
-  author = {Yaghi, Samer and Baraka, Alhanjouri, Mohammed},
+  author = {Yaghi, Samer and Alhanjouri, Mohammed},
   title = {Cycle-Resolved Physics-Informed AI for Lithium-Ion Battery Degradation Prediction},
   year = {2026},
-  url = {[https://github.com/sameredu/UCAS-EDML-Graduation-Prediction](https://github.com/sameredu/Battery-PIAI-ECM)]}
+  url = {[(https://github.com/sameredu/Battery-PIAI-ECM)](https://github.com/sameredu/Battery-PIAI-ECM)]}
 }
 
 ---
