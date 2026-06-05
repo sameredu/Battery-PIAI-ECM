@@ -1,3 +1,12 @@
+[![Python](https://img.shields.io/badge/Python-3.7%2B-blue)](https://python.org)
+[![PySpark](https://img.shields.io/badge/Apache%20Spark-3.x-orange)](https://spark.apache.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+[![ORCID](https://img.shields.io/badge/ORCID-0009--0001--0268--7163-brightgreen)](https://orcid.org/0009-0001-0268-7163)
+[![ResearchGate](https://img.shields.io/badge/ResearchGate-Samer--Yaghi-00CCBB)](https://www.researchgate.net/profile/Samer-Yaghi-2)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20556874.svg)](https://doi.org/10.5281/zenodo.20556874)
+[![GitHub Stars](https://img.shields.io/github/stars/sameredu/Battery-PIAI-ECM?style=social)](https://github.com/sameredu/Battery-PIAI-ECM)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20556874.svg)](https://doi.org/10.5281/zenodo.20556874)
+
 # ⚡ Cycle-Resolved Physics-Informed AI for Lithium-Ion Battery Degradation
 
 This repository contains the implementation of a physics-informed experimental and machine learning framework for lithium-ion battery degradation analysis using equivalent circuit modeling (ECM) and NASA prognostics datasets.
