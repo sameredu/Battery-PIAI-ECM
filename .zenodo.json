@@ -1,0 +1,29 @@
+{
+  "title": "Cycle-Resolved Physics-Informed AI for Lithium-Ion Battery Degradation Prediction",
+  "description": "This repository contains the implementation of a physics-informed experimental and machine learning framework for lithium-ion battery degradation analysis using equivalent circuit modeling (ECM) and NASA prognostics datasets.We extract cycle-resolved ECM parameters (R0, R1, C1, R2, C2) from NASA battery datasets and integrate them with statistical analysis and machine learning to build an interpretable Remaining Useful Life (RUL) prediction framework. The framework combines physics-based insights from ECM parameters with data-driven machine learning models to enhance the accuracy and interpretability of battery degradation predictions. We evaluate the performance of our approach using various machine learning algorithms and demonstrate its effectiveness in predicting battery RUL, providing valuable insights for battery management systems and prognostics.",
+  "creators": [
+    {
+      "name": "Yaghi, Samer",
+      "affiliation": "University College of Applied Sciences (UCAS)",
+      "orcid": "0009-0001-0268-7163"
+    },
+    {
+    "name": "Alhanjouri,Mohammed",
+    "affiliation": "Islamic University of Gaza, Palestine"
+    }
+  ],
+  "license": "MIT",
+  "upload_type": "software",
+  "access_right": "open",
+    "keywords": [
+    "educational-data-mining",
+    "machine-learning",
+    "graduation-prediction",
+    "academic-analytics",
+    "ucas",
+    "predictive-modeling"
+  ],
+  "communities": [],
+  "version": "1.0.0",
+  "language": "eng"
+}
