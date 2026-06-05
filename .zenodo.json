@@ -15,13 +15,17 @@
   "license": "MIT",
   "upload_type": "software",
   "access_right": "open",
-    "keywords": [
-    "educational-data-mining",
+  "keywords": [
+    "lithium-ion-battery",
+    "battery-degradation",
+    "equivalent-circuit-model",
+    "ecm",
+    "remaining-useful-life",
+    "rul-prediction",
+    "physics-informed-ai",
+    "battery-prognostics",
     "machine-learning",
-    "graduation-prediction",
-    "academic-analytics",
-    "ucas",
-    "predictive-modeling"
+    "nasa-battery-dataset"
   ],
   "communities": [],
   "version": "1.0.0",
