@@ -4,4 +4,4 @@ __pycache__/
 *.pyd
 .ipynb_checkpoints/
 *.pkl
-results/
+
