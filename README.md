@@ -1,5 +1,4 @@
 [![Python](https://img.shields.io/badge/Python-3.7%2B-blue)](https://python.org)
-[![PySpark](https://img.shields.io/badge/Apache%20Spark-3.x-orange)](https://spark.apache.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 [![ORCID](https://img.shields.io/badge/ORCID-0009--0001--0268--7163-brightgreen)](https://orcid.org/0009-0001-0268-7163)
 [![ResearchGate](https://img.shields.io/badge/ResearchGate-Samer--Yaghi-00CCBB)](https://www.researchgate.net/profile/Samer-Yaghi-2)
@@ -111,3 +110,36 @@ If you use this code in your work, please cite it as:
   keywords = {Lithium-ion battery, ECM, Physics-Informed AI, RUL, NASA dataset}
 }
 ```
+
+## Citation
+
+@software{yaghi2026ucasedml,
+  author = {Yaghi, Samer and Baraka, Alhanjouri, Mohammed},
+  title = {Cycle-Resolved Physics-Informed AI for Lithium-Ion Battery Degradation Prediction},
+  year = {2026},
+  url = {[https://github.com/sameredu/UCAS-EDML-Graduation-Prediction](https://github.com/sameredu/Battery-PIAI-ECM)]}
+}
+
+---
+## Related Links
+
+- 📄 ResearchGate: [researchgate.net/profile/Samer-Yaghi-2](https://www.researchgate.net/profile/Samer-Yaghi-2)
+- 🔬 ORCID: [orcid.org/0009-0001-0268-7163](https://orcid.org/0009-0001-0268-7163)
+- 🏛️ UCAS: [ucas.edu.ps](https://www.ucas.edu.ps)
+- 🏛️ IUG: [iugaza.edu.ps](https://www.iugaza.edu.ps)
+
+---
+
+## License
+
+This code is released under the [MIT License](LICENSE).
+The dataset (sample only) is provided for academic research purposes.
+
+---
+
+*Faculty of Information Technology · University College of Applied Sciences (UCAS) · Islamic University of Gaza · Palestine · © 2026*
+
+
+
+
+
