@@ -4,4 +4,6 @@ __pycache__/
 *.pyd
 .ipynb_checkpoints/
 *.pkl
-
+data/raw/*.mat
+.DS_Store
+*.swp

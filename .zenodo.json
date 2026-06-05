@@ -1,15 +1,15 @@
 {
-  "title": "Cycle-Resolved Physics-Informed AI for Lithium-Ion Battery Degradation Prediction",
-  "description": "This repository contains the implementation of a physics-informed experimental and machine learning framework for lithium-ion battery degradation analysis using equivalent circuit modeling (ECM) and NASA prognostics datasets.We extract cycle-resolved ECM parameters (R0, R1, C1, R2, C2) from NASA battery datasets and integrate them with statistical analysis and machine learning to build an interpretable Remaining Useful Life (RUL) prediction framework. The framework combines physics-based insights from ECM parameters with data-driven machine learning models to enhance the accuracy and interpretability of battery degradation predictions. We evaluate the performance of our approach using various machine learning algorithms and demonstrate its effectiveness in predicting battery RUL, providing valuable insights for battery management systems and prognostics.",
+  "title": "From Impedance Spectroscopy to Prognosis A Physics-Informed AI Approach to Lithium-Ion Battery Degradation and Remaining Useful Life",
+  "description": "This repository contains the full implementation of a Physics-Informed AI (PIAI) framework for lithium-ion battery degradation analysis and Remaining Useful Life (RUL) prediction. Electrolyte resistance Re and charge-transfer resistance Rct are extracted directly from Electrochemical Impedance Spectroscopy (EIS) measurements on the NASA battery dataset (B0005, B0006, B0007, B0018 — 636 discharge cycles). ANOVA and Kruskal-Wallis tests confirm statistically significant inter-cell differences (F_Re = 287.85, F_Rct = 176.91, all p < .001). Re and Rct exhibit strong positive coupling (R² = 0.937), confirming their utility as compact SOH indicators. A Leave-One-Battery-Out Random Forest regressor achieves RMSE = 11.42 cycles and R² = 0.873 on test cell B0018. The framework bridges physics-based electrochemical insight with interpretable machine learning for battery health monitoring.",
   "creators": [
     {
       "name": "Yaghi, Samer",
-      "affiliation": "University College of Applied Sciences (UCAS)",
+      "affiliation": "University College of Applied Sciences (UCAS), Gaza, Palestine",
       "orcid": "0009-0001-0268-7163"
     },
     {
-    "name": "Alhanjouri,Mohammed",
-    "affiliation": "Islamic University of Gaza, Palestine"
+      "name": "Alhanjouri, Mohammed",
+      "affiliation": "Islamic University of Gaza (IUG), Gaza, Palestine"
     }
   ],
   "license": "MIT",
@@ -18,16 +18,28 @@
   "keywords": [
     "lithium-ion-battery",
     "battery-degradation",
-    "equivalent-circuit-model",
-    "ecm",
+    "electrochemical-impedance-spectroscopy",
+    "EIS",
+    "electrolyte-resistance",
+    "charge-transfer-resistance",
     "remaining-useful-life",
-    "rul-prediction",
-    "physics-informed-ai",
+    "RUL-prediction",
+    "physics-informed-AI",
     "battery-prognostics",
-    "machine-learning",
-    "nasa-battery-dataset"
+    "random-forest",
+    "ANOVA",
+    "state-of-health",
+    "NASA-battery-dataset",
+    "machine-learning"
   ],
   "communities": [],
-  "version": "1.0.0",
-  "language": "eng"
+  "version": "2.0.0",
+  "language": "eng",
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/sameredu/Battery-PIAI-ECM",
+      "relation": "isSupplementTo",
+      "scheme": "url"
+    }
+  ]
 }

@@ -1,186 +1,192 @@
+"""
+rul_model.py
+------------
+Random Forest RUL prediction using Leave-One-Battery-Out (LOBO) validation.
+Train on B0005, B0006, B0007 → test on B0018.
+
+Features: Re, Rct, Capacity_Ah, CycleIndex, V_mean, T_mean, Duration_s
+Target  : Remaining Useful Life (cycles to EOL at 1.40 Ah)
+"""
+
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import mean_squared_error, r2_score
-from sklearn.preprocessing import StandardScaler
-import joblib
-import os
 import json
-import matplotlib.use('Agg')
+import os
+import joblib
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-from src.config import MODEL_PATH, METRICS_PATH, FIGURES_DIR, TABLES_DIR, TEST_BATTERY, RANDOM_STATE
-from src.feature_engineering import prepare_features
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import mean_squared_error, r2_score
 
-def train_rul(X_train, y_train):
+from src.config import (
+    EOL_THRESHOLD, TEST_BATTERY, TRAIN_BATTERIES, FEATURE_COLS,
+    RF_N_ESTIMATORS, RF_RANDOM_STATE,
+    FIGURES_DIR, TABLES_DIR, METRICS_JSON, MODEL_PKL
+)
+
+
+def compute_rul(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Trains a RandomForestRegressor model on the training features.
-    Matches the requested rul_model template.
+    Add RUL column to DataFrame.
+    RUL = EOL_cycle − CycleIndex  (clipped at 0)
+    EOL_cycle = first cycle where Capacity_Ah ≤ EOL_THRESHOLD,
+                or max CycleIndex + 1 if threshold never reached.
     """
-    model = RandomForestRegressor(n_estimators=200, random_state=RANDOM_STATE, max_depth=10, min_samples_leaf=1)
+    df = df.copy()
+    result = []
+    for bat, grp in df.groupby('Battery'):
+        g = grp.sort_values('CycleIndex').copy()
+        below = g[g['Capacity_Ah'] <= EOL_THRESHOLD]
+        eol   = int(below['CycleIndex'].min()) if len(below) else int(g['CycleIndex'].max()) + 1
+        g['RUL']      = (eol - g['CycleIndex']).clip(lower=0)
+        g['EOL_cycle'] = eol
+        result.append(g)
+    return pd.concat(result, ignore_index=True)
+
+
+def train_rf(X_train: np.ndarray, y_train: np.ndarray) -> RandomForestRegressor:
+    """Train a Random Forest regressor."""
+    model = RandomForestRegressor(
+        n_estimators=RF_N_ESTIMATORS,
+        random_state=RF_RANDOM_STATE,
+        n_jobs=-1
+    )
     model.fit(X_train, y_train)
     return model
 
-def evaluate(model, X_test, y_test):
-    """
-    Evaluates the model on test features and returns RMSE and R-squared.
-    Matches the requested rul_model template.
-    """
-    pred = model.predict(X_test)
-    rmse = np.sqrt(mean_squared_error(y_test, pred))
-    r2 = r2_score(y_test, pred)
-    return rmse, r2
 
-def save_model(model, path=MODEL_PATH):
-    """
-    Saves the trained model to disk.
-    Matches the requested rul_model template.
-    """
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    joblib.dump(model, path)
-    print(f"Saved model to {path}")
-
-def run_rul_pipeline(df_params, df_full_capacity):
-    """
-    Runs the RUL training and evaluation pipeline:
-    - Calculates actual RUL target based on full capacity and EOL
-    - Merges with ECM parameters
-    - Splits data by Leave-One-Battery-Out (LOBO) on TEST_BATTERY
-    - Train and evaluate Random Forest Regressor
-    - Save plots, feature importances, metrics, and trained model
-    """
-    print("\nRunning RUL prediction pipeline...")
-    
-    # 1. EOL calculation
-    # df_full_capacity has cols: ['Battery_ID', 'CycleIndex', 'Capacity_Ah_Full']
-    # EOL defined as Capacity_Ah_Full <= 1.40
-    # Group by Battery_ID and find min CycleIndex where capacity <= 1.40
-    eol_thresh = 1.40
-    eol_df = df_full_capacity[df_full_capacity['Capacity_Ah_Full'] <= eol_thresh]
-    eol_cycles = eol_df.groupby('Battery_ID')['CycleIndex'].min()
-    
-    print("Calculated End-of-Life (EOL) Cycles (at <= 1.4 Ah):")
-    for b_id, eol_c in eol_cycles.items():
-        print(f"  {b_id}: {eol_c} cycles")
-        
-    # Map EOL cycle to each battery; if a battery didn't reach EOL, use its max cycle
-    max_cycles = df_full_capacity.groupby('Battery_ID')['CycleIndex'].max()
-    
-    df_full_capacity['EOL_Cycle'] = df_full_capacity['Battery_ID'].map(eol_cycles)
-    df_full_capacity['EOL_Cycle'] = df_full_capacity.apply(
-        lambda row: row['EOL_Cycle'] if pd.notna(row['EOL_Cycle']) 
-        else max_cycles.get(row['Battery_ID'], row['CycleIndex']),
-        axis=1
-    )
-    
-    # RUL is EOL_Cycle - CycleIndex (clamped at 0)
-    df_full_capacity['RUL'] = (df_full_capacity['EOL_Cycle'] - df_full_capacity['CycleIndex']).clip(lower=0)
-    
-    # 2. Prepare features (tau constants)
-    df_feat = prepare_features(df_params)
-    
-    # Rename Battery to Battery_ID for merging if needed
-    if 'Battery' in df_feat.columns:
-        df_feat = df_feat.rename(columns={'Battery': 'Battery_ID'})
-        
-    # 3. Merge features (X) and actual RUL (Y)
-    df_merged = pd.merge(
-        df_feat,
-        df_full_capacity[['Battery_ID', 'CycleIndex', 'RUL']],
-        on=['Battery_ID', 'CycleIndex'],
-        how='left'
-    )
-    
-    # Drop rows without RUL target
-    df_merged = df_merged.dropna(subset=['RUL']).reset_index(drop=True)
-    print(f"Merged features and target. Shape: {df_merged.shape}")
-    
-    # 4. Standardize features
-    FEATURES = ['R0', 'R1', 'C1', 'R2', 'C2', 'Voc_slope', 'Voc_intercept', 'Capacity_Ah']
-    TARGET = 'RUL'
-    
-    X = df_merged[FEATURES].copy()
-    y = df_merged[TARGET].copy()
-    
-    # Scale features
-    scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X)
-    X_scaled_df = pd.DataFrame(X_scaled, columns=FEATURES)
-    
-    # Add Battery_ID and CycleIndex back
-    df_scaled_all = X_scaled_df.copy()
-    df_scaled_all['Battery_ID'] = df_merged['Battery_ID']
-    df_scaled_all['CycleIndex'] = df_merged['CycleIndex']
-    df_scaled_all['RUL'] = y
-    
-    # 5. Data Split (LOBO)
-    train_df = df_scaled_all[df_scaled_all['Battery_ID'] != TEST_BATTERY]
-    test_df = df_scaled_all[df_scaled_all['Battery_ID'] == TEST_BATTERY]
-    
-    print(f"LOBO split: Training on {train_df['Battery_ID'].unique()}, testing on {TEST_BATTERY}")
-    
-    X_train = train_df[FEATURES]
-    y_train = train_df[TARGET]
-    X_test = test_df[FEATURES]
-    y_test = test_df[TARGET]
-    
-    if X_train.empty or X_test.empty:
-        print("Error: Train or test data is empty. Cannot train RUL model.")
-        return
-        
-    # 6. Train model
-    print("Training Random Forest Regressor...")
-    model = train_rul(X_train, y_train)
-    
-    # 7. Evaluate model
-    rmse, r2 = evaluate(model, X_test, y_test)
-    print(f"\n--- Final PIAI-RUL Results on {TEST_BATTERY} ---")
-    print(f"  RMSE: {rmse:.2f} cycles")
-    print(f"  R2:   {r2:.3f}")
-    
-    # Save model and scaler (can bundle together in dict if needed, or just model)
-    save_model(model, MODEL_PATH)
-    
-    # 8. Save metrics to json
-    metrics = {
-        'test_battery': TEST_BATTERY,
-        'rmse_cycles': float(rmse),
-        'r2_score': float(r2),
-        'features_used': FEATURES
-    }
-    with open(METRICS_PATH, 'w') as f:
-        json.dump(metrics, f, indent=4)
-    print(f"Saved metrics to {METRICS_PATH}")
-    
-    # 9. Plot prediction results
-    plt.figure(figsize=(12, 6))
-    # Retrieve unscaled test cycles
-    test_cycles = df_merged[df_merged['Battery_ID'] == TEST_BATTERY]['CycleIndex']
+def evaluate_rf(model, X_test, y_test):
+    """Return predictions, RMSE, and R²."""
     y_pred = model.predict(X_test)
-    
-    plt.plot(test_cycles, y_test, label=f'Actual RUL ({TEST_BATTERY})', color='blue', linewidth=2, marker='o')
-    plt.plot(test_cycles, y_pred, label=f'Predicted RUL (PIAI-RF) (RMSE: {rmse:.2f})', color='red', linestyle='--', marker='x')
-    plt.title(f'RUL Prediction using PIAI Features (Test on {TEST_BATTERY})')
-    plt.xlabel('Cycle Index')
-    plt.ylabel('Remaining Useful Life (RUL) - Cycles')
-    plt.legend()
-    plt.grid(True, linestyle=':', alpha=0.6)
-    
-    os.makedirs(FIGURES_DIR, exist_ok=True)
-    plt.savefig(os.path.join(FIGURES_DIR, "rul_predictions_vs_actual.png"), dpi=300)
-    plt.close()
-    
-    # 10. Feature Importance
-    importances = model.feature_importances_
-    importance_df = pd.DataFrame({
-        'Feature': FEATURES,
-        'Importance': importances
-    }).sort_values(by='Importance', ascending=False)
-    
+    rmse   = float(np.sqrt(mean_squared_error(y_test, y_pred)))
+    r2     = float(r2_score(y_test, y_pred))
+    return y_pred, rmse, r2
+
+
+def run_rul_pipeline(df: pd.DataFrame) -> dict:
+    """
+    Full LOBO RUL pipeline.
+
+    1. Compute RUL labels
+    2. Split: train = TRAIN_BATTERIES, test = TEST_BATTERY
+    3. Scale features with StandardScaler
+    4. Train Random Forest
+    5. Evaluate and save results
+
+    Returns
+    -------
+    dict with keys: RMSE, R2, feature_importance, y_test, y_pred
+    """
+    print(f"\n[RUL] Computing RUL labels (EOL threshold: {EOL_THRESHOLD} Ah)...")
+    df_rul = compute_rul(df)
+
+    # Report EOL per cell
+    for bat, grp in df_rul.groupby('Battery'):
+        eol = grp['EOL_cycle'].iloc[0]
+        print(f"  {bat}: EOL = {eol if eol <= grp['CycleIndex'].max() else 'N/A (>' + str(grp['CycleIndex'].max()) + ')'}")
+
+    # ── Split ──────────────────────────────────────────────────────────────
+    clean  = df_rul.dropna(subset=FEATURE_COLS + ['RUL'])
+    train  = clean[clean['Battery'].isin(TRAIN_BATTERIES)]
+    test   = clean[clean['Battery'] == TEST_BATTERY].sort_values('CycleIndex')
+
+    X_train = train[FEATURE_COLS].values
+    y_train = train['RUL'].values
+    X_test  = test[FEATURE_COLS].values
+    y_test  = test['RUL'].values
+
+    print(f"\n[RUL] Training samples: {len(X_train)}  |  Test samples: {len(X_test)}")
+
+    # ── Scale ──────────────────────────────────────────────────────────────
+    scaler    = StandardScaler()
+    X_train_s = scaler.fit_transform(X_train)
+    X_test_s  = scaler.transform(X_test)
+
+    # ── Train ──────────────────────────────────────────────────────────────
+    print("[RUL] Training Random Forest regressor...")
+    model = train_rf(X_train_s, y_train)
+
+    # ── Evaluate ───────────────────────────────────────────────────────────
+    y_pred, rmse, r2 = evaluate_rf(model, X_test_s, y_test)
+    print(f"\n[RUL] Results on {TEST_BATTERY}:")
+    print(f"  RMSE = {rmse:.2f} cycles")
+    print(f"  R²   = {r2:.4f}")
+
+    # ── Feature importance ─────────────────────────────────────────────────
+    fi = pd.Series(model.feature_importances_, index=FEATURE_COLS).sort_values(ascending=False)
+    print("\n[RUL] Feature importance:")
+    for feat, val in fi.items():
+        print(f"  {feat:<15}: {val:.4f}")
+
+    fi_df = fi.reset_index()
+    fi_df.columns = ['Feature', 'Importance']
     os.makedirs(TABLES_DIR, exist_ok=True)
-    importance_df.to_csv(os.path.join(TABLES_DIR, "table2_feature_importance.csv"), index=False)
-    
-    print("\nFeature Importances:")
-    print(importance_df.to_string(index=False))
-    
-    return metrics
+    fi_df.to_csv(os.path.join(TABLES_DIR, 'feature_importance.csv'), index=False)
+
+    # ── Save model ─────────────────────────────────────────────────────────
+    joblib.dump({'model': model, 'scaler': scaler}, MODEL_PKL)
+    print(f"[RUL] Model saved → {MODEL_PKL}")
+
+    # ── Save metrics ───────────────────────────────────────────────────────
+    metrics = {
+        'RMSE_cycles'          : round(rmse, 4),
+        'R2'                   : round(r2, 4),
+        'test_battery'         : TEST_BATTERY,
+        'train_batteries'      : TRAIN_BATTERIES,
+        'feature_importance'   : fi.round(4).to_dict(),
+        'n_estimators'         : RF_N_ESTIMATORS,
+    }
+    os.makedirs(os.path.dirname(METRICS_JSON), exist_ok=True)
+    with open(METRICS_JSON, 'w') as f:
+        json.dump(metrics, f, indent=2)
+    print(f"[RUL] Metrics saved → {METRICS_JSON}")
+
+    # ── Plot Figure 6 ──────────────────────────────────────────────────────
+    _plot_rul(test['CycleIndex'].values, y_test, y_pred, rmse, r2, fi)
+
+    return {**metrics, 'y_test': y_test, 'y_pred': y_pred}
+
+
+def _plot_rul(cycles, y_test, y_pred, rmse, r2, fi):
+    """Generate Fig 6: RUL prediction + feature importance."""
+    plt.rcParams.update({'font.family': 'DejaVu Serif', 'font.size': 12,
+                         'axes.spines.top': False, 'axes.spines.right': False,
+                         'savefig.dpi': 200, 'savefig.bbox': 'tight'})
+
+    fig, axes = plt.subplots(1, 2, figsize=(13, 5))
+
+    # Left: actual vs predicted RUL
+    ax = axes[0]
+    order = np.argsort(cycles)
+    ax.plot(cycles[order], y_test[order],  color='#2166AC', lw=2, label='Actual RUL')
+    ax.plot(cycles[order], y_pred[order],  color='#D6604D', lw=2, ls='--',
+            label=f'Predicted RUL')
+    ax.fill_between(cycles[order],
+                    y_test[order] - rmse, y_test[order] + rmse,
+                    alpha=0.15, color='#2166AC', label=f'±RMSE ({rmse:.1f} cyc)')
+    ax.set_xlabel('Cycle Index')
+    ax.set_ylabel('Remaining Useful Life (cycles)')
+    ax.set_title(f'{TEST_BATTERY} — RMSE = {rmse:.2f}  R² = {r2:.3f}')
+    ax.legend(fontsize=10)
+
+    # Right: feature importance
+    ax2 = axes[1]
+    colors = ['#2166AC' if i == 0 else '#4A90D9' for i in range(len(fi))]
+    bars = ax2.barh(fi.index, fi.values, color=colors, edgecolor='white')
+    ax2.set_xlabel('Importance Score')
+    ax2.set_title('Random Forest Feature Importance')
+    ax2.invert_yaxis()
+    for bar, val in zip(bars, fi.values):
+        ax2.text(val + 0.002, bar.get_y() + bar.get_height() / 2,
+                 f'{val:.3f}', va='center', fontsize=10)
+
+    fig.suptitle(f'Fig. 6  Hybrid PIAI RUL Prediction — Leave-One-Out ({TEST_BATTERY})',
+                 fontsize=13)
+    fig.tight_layout()
+    os.makedirs(FIGURES_DIR, exist_ok=True)
+    fig.savefig(os.path.join(FIGURES_DIR, 'fig6_RUL.png'))
+    plt.close()
+    print(f"[RUL] Fig 6 saved → {FIGURES_DIR}/fig6_RUL.png")

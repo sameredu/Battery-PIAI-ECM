@@ -1,41 +1,50 @@
+"""
+config.py
+---------
+Global constants, file paths, and model settings for the Battery-PIAI-ECM v2.0.0 pipeline.
+EIS-based approach: Re and Rct extracted directly from NASA MAT impedance fields.
+"""
+
 import os
-import numpy as np
 
-# --- Paths Configuration ---
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# ── Directory structure ──────────────────────────────────────────────────────
+BASE_DIR           = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+RAW_DATA_DIR       = os.path.join(BASE_DIR, "data", "raw")
+RESULTS_DIR        = os.path.join(BASE_DIR, "results")
+FIGURES_DIR        = os.path.join(RESULTS_DIR, "figures")
+TABLES_DIR         = os.path.join(RESULTS_DIR, "tables")
 
-RAW_DATA_DIR = os.path.join(BASE_DIR, "data", "raw")
-PROCESSED_DATA_DIR = os.path.join(BASE_DIR, "data", "processed")
-RESULTS_DIR = os.path.join(BASE_DIR, "results")
-FIGURES_DIR = os.path.join(RESULTS_DIR, "figures")
-TABLES_DIR = os.path.join(RESULTS_DIR, "tables")
-MODELS_DIR = os.path.join(BASE_DIR, "models")
+# ── Output file paths ────────────────────────────────────────────────────────
+PROCESSED_CSV      = os.path.join(TABLES_DIR, "battery_processed.csv")
+STAT_TESTS_CSV     = os.path.join(TABLES_DIR, "stat_tests_summary.csv")
+REGRESSION_CSV     = os.path.join(TABLES_DIR, "regression_results.csv")
+FEATURE_IMP_CSV    = os.path.join(TABLES_DIR, "feature_importance.csv")
+METRICS_JSON       = os.path.join(RESULTS_DIR, "metrics.json")
+MODEL_PKL          = os.path.join(RESULTS_DIR, "rf_rul_model.pkl")
 
-COMBINED_PARAMS_CSV = os.path.join(PROCESSED_DATA_DIR, "all_batteries_params_combined.csv")
-COMBINED_CLEANED_CSV = os.path.join(TABLES_DIR, "all_batteries_params_combined_cleaned.csv")
-REGRESSION_RESULTS_CSV = os.path.join(TABLES_DIR, "regression_results.csv")
-STAT_TESTS_CSV = os.path.join(TABLES_DIR, "stat_tests_summary.csv")
-METRICS_PATH = os.path.join(RESULTS_DIR, "metrics.json")
-WORD_DOC_PATH = os.path.join(RESULTS_DIR, "IV_Results_and_Discussion_ECM_LiIon_IEEE.docx")
-MODEL_PATH = os.path.join(MODELS_DIR, "random_forest_rul.pkl")
-
-# --- Battery Datasets Map ---
+# ── Battery dataset ──────────────────────────────────────────────────────────
 BATTERY_KEYS = ["B0005", "B0006", "B0007", "B0018"]
 BATTERY_FILES = {
     key: os.path.join(RAW_DATA_DIR, f"{key}.mat") for key in BATTERY_KEYS
 }
 
-# --- EOL and Model Constants ---
-EOL_THRESHOLD = 1.40  # End-of-Life capacity threshold (Ah)
-TEST_BATTERY = "B0018"  # Battery to evaluate on (Leave-One-Battery-Out validation)
-RANDOM_STATE = 42
+# ── Experiment constants ─────────────────────────────────────────────────────
+EOL_THRESHOLD   = 1.40   # End-of-Life capacity threshold (Ah) — 30% fade from 2 Ah rated
+DISCHARGE_CURRENT = 2.0  # Constant discharge current (A)
+TEST_BATTERY    = "B0018"
+TRAIN_BATTERIES = ["B0005", "B0006", "B0007"]
+RANDOM_STATE    = 42
 
-# --- Optimization Settings (2-RC ECM) ---
-# Parameters format: [R0, R1, C1, R2, C2, Voc_slope, Voc_intercept]
-LB = np.array([1e-4, 1e-4, 1e-1, 1e-4, 1e-1, -0.5, 3.0])
-UB = np.array([0.5,  5.0,  1e4,  5.0,  1e4,  0.5,  4.2])
-X0 = (LB + UB) / 2.0
+# ── EIS validity bounds ──────────────────────────────────────────────────────
+RE_MIN_OHM  = 0.010   # Minimum plausible Re  (10 mΩ)
+RE_MAX_OHM  = 0.200   # Maximum plausible Re  (200 mΩ)
+RCT_MIN_OHM = 0.010   # Minimum plausible Rct (10 mΩ)
+RCT_MAX_OHM = 0.300   # Maximum plausible Rct (300 mΩ)
 
-# Sampling configuration to avoid slow runtime (set to 1 to run on all cycles)
-SAMPLING_INTERVAL = 20
-LEAST_SQUARES_MAX_NFEV = 500
+# ── Random Forest settings ───────────────────────────────────────────────────
+RF_N_ESTIMATORS = 200
+RF_RANDOM_STATE = RANDOM_STATE
+
+# ── Feature columns used for RUL prediction ──────────────────────────────────
+FEATURE_COLS = ["Re", "Rct", "Capacity_Ah", "CycleIndex",
+                "V_mean", "T_mean", "Duration_s"]

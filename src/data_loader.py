@@ -1,173 +1,125 @@
-import os
+"""
+data_loader.py
+--------------
+Load NASA battery MAT files and extract discharge cycle records.
+Returns a clean DataFrame with per-cycle capacity, voltage, current,
+temperature statistics, and impedance (Re, Rct) from adjacent EIS sweeps.
+"""
+
 import numpy as np
 import pandas as pd
 import scipy.io
+import os
 
-def load_nasa_data(path):
-    """
-    Loads raw NASA .mat files and returns a dictionary mapping cell names to mat objects.
-    Matches the requested data_loader template.
-    """
-    data = {}
-    files = ["B0005.mat", "B0006.mat", "B0007.mat", "B0018.mat"]
+from src.config import BATTERY_KEYS, BATTERY_FILES, RE_MIN_OHM, RE_MAX_OHM, RCT_MIN_OHM, RCT_MAX_OHM
 
-    for f in files:
-        full_path = os.path.join(path, f)
-        if os.path.exists(full_path):
-            data[f.replace(".mat", "")] = scipy.io.loadmat(full_path)
-        else:
-            print(f"Warning: File {full_path} not found.")
 
-    return data
+def _safe_float(val):
+    """Safely convert a value to a scalar float."""
+    arr = np.atleast_1d(val).flatten()
+    return float(arr[0]) if len(arr) > 0 else np.nan
 
-def get_field(obj, *names):
-    """
-    Helper to robustly extract fields from nested structures or dictionaries.
-    """
-    for n in names:
-        try:
-            if hasattr(obj, n):
-                return getattr(obj, n)
-            if isinstance(obj, dict) and n in obj:
-                return obj[n]
-        except Exception:
-            pass
-    return None
 
-def load_cycles(file_path):
+def extract_battery_cycles(mat_file: str, battery_name: str) -> pd.DataFrame:
     """
-    Loads raw cycles array from a NASA mat file.
-    """
-    m = scipy.io.loadmat(file_path, squeeze_me=True, struct_as_record=False)
-    keys = [k for k in m.keys() if not k.startswith("__")]
-    if not keys:
-        return []
-    
-    # Try to find the key matching the filename or containing 'cycle'
-    main_key = None
-    file_basename = os.path.basename(file_path).replace('.mat', '')
-    if file_basename in keys:
-        main_key = file_basename
-    else:
-        for k in keys:
-            if hasattr(m[k], 'cycle'):
-                main_key = k
-                break
-    
-    if main_key is None:
-        main_key = keys[0]
-        
-    obj = m[main_key]
-    cycles = get_field(obj, 'cycle')
-    
-    if cycles is None:
-        for k in keys:
-            v = m[k]
-            cycles = get_field(v, 'cycle')
-            if cycles is not None:
-                break
-                
-    if cycles is None:
-        print(f"Warning: Could not find 'cycle' structure in {file_path}")
-        return []
-        
-    return cycles if hasattr(cycles, "__len__") else [cycles]
+    Parse a NASA battery MAT file and return a DataFrame of discharge cycles.
 
-def cycle_to_df(cycle):
-    """
-    Converts a single cycle structure's data field to a Pandas DataFrame.
-    """
-    data = get_field(cycle, 'data')
-    if data is None:
-        return pd.DataFrame()
-        
-    def to_np(x):
-        try:
-            return np.asarray(x).flatten()
-        except Exception:
-            return np.array([])
-            
-    t = to_np(get_field(data, 'Time', 'time', 'timestamp'))
-    v = to_np(get_field(data, 'Voltage_measured', 'Voltage', 'voltage'))
-    i = to_np(get_field(data, 'Current_measured', 'Current', 'current'))
-    
-    m = min(len(t), len(v), len(i)) if len(t) > 0 else 0
-    if m == 0:
-        return pd.DataFrame()
-        
-    return pd.DataFrame({'Time (s)': t[:m], 'Voltage (V)': v[:m], 'Current (A)': i[:m]})
+    Each row corresponds to one discharge cycle and contains:
+        - CycleIndex   : sequential discharge count (1-based)
+        - Capacity_Ah  : measured discharge capacity (Ah)
+        - Re           : electrolyte resistance from preceding EIS sweep (Ω)
+        - Rct          : charge-transfer resistance from preceding EIS sweep (Ω)
+        - V_min/V_max/V_mean : voltage statistics during discharge
+        - T_mean/T_max : temperature statistics during discharge
+        - I_mean       : mean absolute current during discharge (A)
+        - Duration_s   : total discharge duration (s)
 
-def is_discharge(cycle):
-    """
-    Checks if a cycle is a discharge cycle based on the type metadata or current values.
-    """
-    typ = get_field(cycle, 'type')
-    if typ is not None:
-        try:
-            return 'discharge' in str(typ).lower()
-        except Exception:
-            pass
-    
-    df = cycle_to_df(cycle)
-    return (not df.empty) and (np.mean(df['Current (A)']) < 0)
+    Parameters
+    ----------
+    mat_file     : path to the .mat file
+    battery_name : e.g. "B0005"
 
-def compute_capacity_Ah(df):
+    Returns
+    -------
+    pd.DataFrame
     """
-    Integrates current over time to compute discharge capacity in Ah.
-    """
-    t = df['Time (s)'].values
-    i = df['Current (A)'].values
-    if len(t) < 2:
-        return np.nan
-    dt = np.diff(t, prepend=t[0])
-    return np.sum(np.abs(i) * dt) / 3600.0
+    d = scipy.io.loadmat(mat_file, squeeze_me=True, struct_as_record=False)
+    cycles = d[battery_name].cycle
 
-def load_full_capacity(file_path, battery_key):
+    records = []
+    discharge_idx = 0
+    last_re  = np.nan
+    last_rct = np.nan
+
+    for cyc in cycles:
+        ctype = cyc.type
+
+        # ── EIS sweep: update last known Re / Rct ─────────────────────────
+        if ctype == 'impedance':
+            data = cyc.data
+            re_val  = _safe_float(data.Re)
+            rct_val = _safe_float(data.Rct)
+            if RE_MIN_OHM < re_val < RE_MAX_OHM:
+                last_re = re_val
+            if RCT_MIN_OHM < rct_val < RCT_MAX_OHM:
+                last_rct = rct_val
+
+        # ── Discharge cycle: record features ──────────────────────────────
+        elif ctype == 'discharge':
+            discharge_idx += 1
+            data = cyc.data
+
+            cap = _safe_float(data.Capacity) if hasattr(data, 'Capacity') else np.nan
+            v   = np.atleast_1d(data.Voltage_measured).flatten()
+            i   = np.atleast_1d(data.Current_measured).flatten()
+            t   = np.atleast_1d(data.Temperature_measured).flatten()
+            tm  = np.atleast_1d(data.Time).flatten()
+
+            records.append({
+                'Battery'    : battery_name,
+                'CycleIndex' : discharge_idx,
+                'Capacity_Ah': cap,
+                'Re'         : last_re,
+                'Rct'        : last_rct,
+                'V_min'      : float(v.min()),
+                'V_max'      : float(v.max()),
+                'V_mean'     : float(v.mean()),
+                'T_mean'     : float(t.mean()),
+                'T_max'      : float(t.max()),
+                'I_mean'     : float(np.abs(i).mean()),
+                'Duration_s' : float(tm[-1] - tm[0]) if len(tm) > 1 else np.nan,
+            })
+
+    return pd.DataFrame(records)
+
+
+def load_all_batteries(battery_files: dict = None) -> pd.DataFrame:
     """
-    Loads EOL-tracking capacity values directly from raw .mat file
-    cycles for discharge type cycles.
+    Load and concatenate discharge cycles for all four NASA cells.
+
+    Parameters
+    ----------
+    battery_files : dict mapping battery name -> MAT file path.
+                    Defaults to BATTERY_FILES from config.
+
+    Returns
+    -------
+    pd.DataFrame with 636 rows (168+168+168+132)
     """
-    try:
-        mat_file = scipy.io.loadmat(file_path, squeeze_me=True, struct_as_record=False)
-        keys = [k for k in mat_file.keys() if not k.startswith("__")]
-        
-        main_key = None
-        if battery_key in keys:
-            main_key = battery_key
-        else:
-            for k in keys:
-                if hasattr(mat_file[k], 'cycle'):
-                    main_key = k
-                    break
-        if main_key is None:
-            main_key = keys[0]
-            
-        cycles = mat_file[main_key].cycle
-        capacity_data = []
-        discharge_cycle_index = 0
-        
-        for cycle_struct in cycles:
-            typ = get_field(cycle_struct, 'type')
-            if typ is not None and 'discharge' in str(typ).lower():
-                discharge_cycle_index += 1
-                data = get_field(cycle_struct, 'data')
-                if data is not None:
-                    # In python-scipy struct_as_record=False, fields are attributes
-                    capacity = np.nan
-                    if hasattr(data, 'Capacity'):
-                        cap_val = getattr(data, 'Capacity')
-                        try:
-                            capacity = float(np.asarray(cap_val).flatten()[0])
-                        except Exception:
-                            pass
-                    
-                    if not np.isnan(capacity):
-                        capacity_data.append({
-                            'Battery_ID': battery_key,
-                            'CycleIndex': discharge_cycle_index,
-                            'Capacity_Ah_Full': capacity
-                        })
-        return pd.DataFrame(capacity_data)
-    except Exception as e:
-        print(f"Error loading full capacity for {battery_key} from {file_path}: {e}")
-        return pd.DataFrame()
+    if battery_files is None:
+        battery_files = BATTERY_FILES
+
+    dfs = []
+    for name, path in battery_files.items():
+        if not os.path.exists(path):
+            print(f"  [WARNING] {path} not found — skipping {name}")
+            continue
+        df = extract_battery_cycles(path, name)
+        print(f"  {name}: {len(df)} discharge cycles  "
+              f"Cap {df['Capacity_Ah'].min():.3f}–{df['Capacity_Ah'].max():.3f} Ah  "
+              f"Re {df['Re'].min()*1000:.1f}–{df['Re'].max()*1000:.1f} mΩ")
+        dfs.append(df)
+
+    combined = pd.concat(dfs, ignore_index=True)
+    print(f"\n  Total: {len(combined)} cycles across {combined['Battery'].nunique()} cells")
+    return combined
