@@ -4,8 +4,4 @@ __pycache__/
 *.pyd
 .ipynb_checkpoints/
 *.pkl
-data/raw/*.mat
 results/
-models/*.pkl
-venv/
-.env
