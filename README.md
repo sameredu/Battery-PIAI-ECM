@@ -133,7 +133,6 @@ If you use this code in your work, please cite it as:
 ## License
 
 This code is released under the [MIT License](LICENSE).
-The dataset (sample only) is provided for academic research purposes.
 
 ---
 
