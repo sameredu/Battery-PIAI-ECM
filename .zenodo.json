@@ -1,5 +1,5 @@
 {
-  "title": "From Impedance Spectroscopy to Prognosis A Physics-Informed AI Approach to Lithium-Ion Battery Degradation and Remaining Useful Life",
+  "title": "Cycle-Resolved EIS Feature Extraction and Physics-Informed Machine Learning for Lithium-Ion Battery Health and Life Prediction",
   "description": "This repository contains the full implementation of a Physics-Informed AI (PIAI) framework for lithium-ion battery degradation analysis and Remaining Useful Life (RUL) prediction. Electrolyte resistance Re and charge-transfer resistance Rct are extracted directly from Electrochemical Impedance Spectroscopy (EIS) measurements on the NASA battery dataset (B0005, B0006, B0007, B0018 — 636 discharge cycles). ANOVA and Kruskal-Wallis tests confirm statistically significant inter-cell differences (F_Re = 287.85, F_Rct = 176.91, all p < .001). Re and Rct exhibit strong positive coupling (R² = 0.937), confirming their utility as compact SOH indicators. A Leave-One-Battery-Out Random Forest regressor achieves RMSE = 11.42 cycles and R² = 0.873 on test cell B0018. The framework bridges physics-based electrochemical insight with interpretable machine learning for battery health monitoring.",
   "creators": [
     {

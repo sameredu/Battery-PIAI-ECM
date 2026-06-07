@@ -1,4 +1,4 @@
-# ⚡ From Impedance Spectroscopy to Prognosis: A Physics-Informed AI Approach to Lithium-Ion Battery Degradation and Remaining Useful Life
+# ⚡ Cycle-Resolved EIS Feature Extraction and Physics-Informed Machine Learning for Lithium-Ion Battery Health and Life Prediction
 
 [![Python](https://img.shields.io/badge/Python-3.7%2B-blue)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green)](LICENSE)
@@ -148,8 +148,8 @@ If you use this code or results in your work, please cite:
 ```bibtex
 @article{yaghi2026piai,
   author   = {Samer Yaghi and Mohammed Alhanjouri},
-  title    = {From Impedance Spectroscopy to Prognosis: A Physics-Informed AI
-              Approach to Lithium-Ion Battery Degradation and Remaining Useful Life},
+  title    = {Cycle-Resolved EIS Feature Extraction and Physics-Informed Machine
+              Learning for Lithium-Ion Battery Health and Life Prediction},
   year     = {2026},
   journal  = {Ionics (Under Review)},
   keywords = {lithium-ion battery, EIS, physics-informed AI, RUL, NASA dataset,
@@ -162,8 +162,8 @@ If you use this code or results in your work, please cite:
 ```bibtex
 @software{yaghi2026battery_piai,
   author    = {Yaghi, Samer and Alhanjouri, Mohammed},
-  title     = {From Impedance Spectroscopy to Prognosis: Physics-Informed AI
-               for Lithium-Ion Battery Degradation},
+  title     = {Cycle-Resolved EIS Feature Extraction and Physics-Informed Machine
+               Learning for Lithium-Ion Battery Health and Life Prediction},
   year      = {2026},
   version   = {2.0.0},
   publisher = {Zenodo},
