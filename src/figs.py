@@ -65,6 +65,7 @@ ax.legend(fontsize=7.5,frameon=False,loc='upper left')
 fig.savefig(f'{F}/fig3_Re_trend.png'); plt.close()
 
 # ---- Fig 4: between-cell distributions ----
+np.random.seed(42)  # jitter must be reproducible
 fig,axes=plt.subplots(1,3,figsize=(9.6,3.2))
 specs=[('Re','$R_e$ (mΩ)',1000,'ICC 0.899   η² 0.600'),
        ('Rct','$R_{ct}$ (mΩ)',1000,'ICC 0.854   η² 0.480'),

@@ -7,3 +7,6 @@ __pycache__/
 data/raw/*.mat
 .DS_Store
 *.swp
+
+# redundant with results/metrics.json
+results/results_summary.json

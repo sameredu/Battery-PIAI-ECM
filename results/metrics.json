@@ -1,5 +1,5 @@
 {
-  "release": "3.0.0",
+  "release": "3.0.1",
   "validation": "complete four-fold leave-one-battery-out",
   "LOBO_folds": {
     "B0005": {
