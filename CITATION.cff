@@ -5,6 +5,7 @@ type: software
 version: 3.0.2
 date-released: 2026-09-25
 license: MIT
+doi: "10.5281/zenodo.22964185"
 repository-code: "https://github.com/sameredu/Battery-PIAI-ECM"
 abstract: >-
   Evaluation of whether electrochemical impedance features transfer across
