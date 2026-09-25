@@ -1,0 +1,10 @@
+Model,mean_RMSE,mean_R2
+Full feature set (RF),19.05,0.668
+Capacity + cycle index (RF),19.66,0.642
+Capacity only (RF),20.46,0.63
+Full feature set (gradient boosting),20.74,0.626
+Linear capacity extrapolation (no training),22.19,0.467
+"No capacity, no cycle index (RF)",23.44,0.524
+No capacity (RF),25.18,0.461
+Full feature set (ridge),31.58,0.155
+Re and Rct only (RF),33.2,-0.02

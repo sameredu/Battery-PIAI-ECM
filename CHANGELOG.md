@@ -1,53 +1,79 @@
 # Changelog
 
-All notable changes to this repository are documented here.
+## v3.0.0 — revised analyses for the Discover Electrochemistry major revision
 
----
+This release accompanies the revised manuscript. It corrects two reporting errors
+carried over from earlier versions, discloses a data-preparation step that was not
+previously described, and adds the analyses requested by the reviewers.
 
-## [v2.0.0] — 2026-06
+### Corrected
 
-### 🔄 Major Changes
+- **Table 1 capacity row.** The manuscript reported ANOVA F = 10.39 and Kruskal H = 36.72
+  for capacity. Those values originate in **v1.0.0**, which obtained capacity by integrating
+  the measured discharge current. From v2.0.0 onward capacity is read from the `Capacity`
+  field recorded with each discharge cycle, which gives F = 8.34 and H = 30.66. The two
+  series differ (B0005 cycle 1: 1.861952 Ah under integration against 1.856487 Ah from the
+  recorded field). The manuscript row was not updated when the pipeline changed; the
+  `Re` and `Rct` rows were, which is why the discrepancy was confined to one row.
 
-#### Methodology — EIS-Direct vs ECM Fitting
-- **Replaced** cycle-by-cycle 2RC ECM parameter fitting (R0, R1, C1, R2, C2) with **direct EIS feature extraction** (Re, Rct) from NASA MAT impedance fields
-- Re and Rct are now read directly from `cycle.data.Re` and `cycle.data.Rct` fields — no nonlinear optimisation required
-- This change eliminates optimizer boundary failures that affected ~40% of cycles in v1.0.0
+- **Sample sizes.** Impedance statistics are computed over **579** cycles (149 each for
+  B0005, B0006 and B0007; 132 for B0018), not the 636 discharge cycles stated previously.
+  636 remains correct for capacity.
 
-#### Updated Results
-| Metric | v1.0.0 | v2.0.0 |
-|--------|--------|--------|
-| Primary coupling | R0–C1, R² = 0.88 | Re–Rct, R² = **0.937** |
-| RUL RMSE (B0018) | 20.42 cycles | **11.42 cycles** |
-| RUL R² (B0018) | 0.662 | **0.873** |
-| ANOVA F (primary) | F = 36.33 (R0) | F = **287.85** (Re) |
-| Top feature | Capacity\_Ah = 0.907 | Capacity\_Ah = **0.791**, Rct = 0.128 |
+- **B0007 minimum capacity.** Previously reported as 1.433 Ah. That is the *final*
+  capacity. The minimum is **1.4005 Ah at discharge cycle 166**, 0.46 mAh above the
+  1.40 Ah threshold, with three cycles at or below 1.41 Ah.
 
-#### Updated Paper Title
-- **Old:** *Cycle-Resolved Physics-Based Analysis of Lithium-Ion Battery Degradation Using Equivalent Circuit Modeling*
-- **New:** *From Impedance Spectroscopy to Prognosis: A Physics-Informed AI Approach to Lithium-Ion Battery Degradation and Remaining Useful Life*
+- **Re range.** Previously reported as 43.6–79.1 mΩ. The pooled range is **35.9–79.1 mΩ**.
 
-#### Updated Figures
-- Fig 2: Capacity fade with per-cell linear regression (R² = 0.940–0.977)
-- Fig 3: Re trend across cycles (replacing R0 trend)
-- Fig 4: Re–Rct coupling scatter + Pearson correlation matrix
-- Fig 5: Radar degradation signatures (Re%, Rct%, capacity fade, EOL, R²)
-- Fig 6: RUL prediction B0018 + feature importance bar chart
+### Disclosed
 
-#### Updated Source Files
-- `src/eis_features.py` — new module replacing `ecm_model.py` and `parameter_estimation.py`
-- `src/capacity_tracking.py` — Coulomb counting from discharge profiles
-- Notebooks renamed to reflect EIS-based workflow
+- **Impedance-to-cycle mapping.** Impedance sweeps are not recorded once per discharge
+  cycle. The raw files contain 278 sweeps for each of B0005, B0006 and B0007 against 168
+  discharge cycles, and **53 sweeps for B0018 against 132 discharge cycles**. Each cycle is
+  assigned the nearest available sweep, so B0018 carries 132 rows built from only 49
+  distinct values. Analyses affected by this are reported both on the full mapping and on
+  the de-duplicated series (`results/tables/coupling_per_cell.csv`).
 
-### 📚 References
-- Added 12 new references [29–40] from 2019–2023 literature
-- All new references cited in-text at appropriate sections
+### Added
 
----
+- Complete four-fold leave-one-battery-out evaluation (`lobo_folds.csv`). The previous
+  release reported a single fold (test on B0018).
+- Feature ablation and baseline comparison, including a training-free linear capacity
+  extrapolation (`ablation_baselines.csv`).
+- Sensitivity of all results to the end-of-life label assigned to the censored cell B0007
+  (`b0007_eol_sensitivity.csv`).
+- Linear mixed-effects models with random intercept per cell, effect sizes and confidence
+  intervals (`between_cell_summary.csv`), replacing the one-way tests.
+- Autocorrelation diagnostics justifying that replacement (`autocorrelation_diagnostics.csv`).
+- Holm-corrected pairwise comparisons with Cliff's delta (`pairwise_holm_cliffs.csv`).
+- Per-cell, within-cell-centred and cycle-partialled coupling analysis (`coupling_per_cell.csv`).
+- Figures regenerated without embedded titles; new Figure 5 (per-cell coupling) and
+  Figure 6 (folds and ablation); Figure 1 redrawn as a vector schematic.
 
-## [v1.0.0] — 2026-06-05
+### Authorship
 
-- Initial release
-- 2RC ECM parameter extraction via NLLS (scipy TRF)
-- Random Forest RUL prediction (LOBO)
-- ANOVA + Kruskal-Wallis statistical validation
-- NASA B0005–B0018 dataset
+The README and Zenodo record for v1.0.0 and v2.0.0 listed two authors. This release lists all
+three authors of the manuscript: Samer Yaghi, Mohammed A. Awadallah and Mohammed Alhanjouri.
+
+### Removed from the manuscript's claims
+
+- The description of the method as "physics-informed AI".
+- The claim that between-cell variance is 288 times within-cell variance. F is a ratio of
+  mean squares; the intraclass correlation is 0.899 for Re, implying a ratio near 9.
+- The claim that the pooled Re–Rct R² of 0.937 demonstrates a single physical process
+  holding across four cells. Per-cell R² ranges from 0.146 to 0.966.
+- The claim that held-out performance was possible only through physical anchoring. The
+  ablation shows a model using Re and Rct alone reaches mean R² = −0.020.
+
+## v2.0.1
+Metadata alignment only (README, Zenodo record, citation). The title used in this tag was
+written for a submission to *Ionics*. That submission is closed. The work is now under review
+at *Discover Electrochemistry* under the title carried by v3.0.0.
+
+## v2.0.0
+EIS-direct feature extraction replacing equivalent-circuit fitting.
+
+## v1.0.0
+Equivalent-circuit parameter identification by nonlinear least squares; capacity by
+current integration. Superseded.

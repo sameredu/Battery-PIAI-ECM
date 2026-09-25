@@ -1,193 +1,165 @@
-# ⚡ Cycle-Resolved EIS Feature Extraction and Physics-Informed Machine Learning for Lithium-Ion Battery Health and Life Prediction
+# Cross Cell Evaluation of Electrochemical Impedance Features for Lithium Ion Battery Remaining Useful Life Prediction
 
-[![Python](https://img.shields.io/badge/Python-3.7%2B-blue)](https://python.org)
+[![Python](https://img.shields.io/badge/Python-3.9%2B-blue)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 [![ORCID](https://img.shields.io/badge/ORCID-0009--0001--0268--7163-brightgreen)](https://orcid.org/0009-0001-0268-7163)
-[![ResearchGate](https://img.shields.io/badge/ResearchGate-Samer--Yaghi-00CCBB)](https://www.researchgate.net/profile/Samer-Yaghi-2)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20556874.svg)](https://doi.org/10.5281/zenodo.20556874)
-[![GitHub Stars](https://img.shields.io/github/stars/sameredu/Battery-PIAI-ECM?style=social)](https://github.com/sameredu/Battery-PIAI-ECM)
 
-**Authors:** Samer Yaghi¹ · Mohammed Alhanjouri²
+**Authors:** Samer Yaghi¹ · Mohammed A. Awadallah² · Mohammed Alhanjouri³
 
-¹ University College of Applied Sciences (UCAS), Gaza, Palestine — syaghi@ucas.edu.ps  
-² Islamic University of Gaza (IUG), Gaza, Palestine — mhanjouri@iugaza.edu.ps
+¹ University College of Applied Sciences (UCAS), Gaza, Palestine — syaghi@ucas.edu.ps
+² Al-Aqsa University, Gaza, Palestine
+³ Islamic University of Gaza (IUG), Gaza, Palestine — mhanjouri@iugaza.edu.ps
 
 ---
 
-## 📌 Overview
+## Overview
 
-This repository contains the full implementation of a **Physics-Informed AI (PIAI)** framework for lithium-ion battery degradation analysis and Remaining Useful Life (RUL) prediction. The framework extracts impedance features — electrolyte resistance **Re** and charge-transfer resistance **Rct** — directly from Electrochemical Impedance Spectroscopy (EIS) measurements on the NASA battery dataset, applies rigorous statistical cross-cell validation, and feeds physics-grounded features into a Random Forest regressor for interpretable RUL estimation.
+This repository evaluates whether electrochemical impedance features transfer across
+lithium-ion cells. Electrolyte resistance `Re` and charge-transfer resistance `Rct` are read
+directly from the recorded impedance fields of the NASA Prognostics Center of Excellence
+dataset, with no circuit fitting. Two questions are kept separate:
 
-> **Key contribution:** Unlike purely data-driven approaches, our pipeline couples EIS-derived physical features with formal ANOVA and Kruskal-Wallis significance testing across four cells, producing a transparent and generalisable prognostic model.
+1. **Discrimination** — do impedance features separate nominally identical cells more
+   sharply than capacity does?
+2. **Transfer** — do those features predict remaining useful life on a cell the model has
+   never seen?
 
----
+The answer to the first is yes and to the second is no, and this release contains the
+analyses that establish both.
 
-## 📊 Key Results
-
-| Metric | Value |
-|--------|-------|
-| Re–Rct coupling R² | **0.937** (p < .001) |
-| Capacity fade R² per cell | **0.940–0.977** |
-| ANOVA F (Re) | **287.85** (p < .001) |
-| ANOVA F (Rct) | **176.91** (p < .001) |
-| RUL RMSE (test: B0018) | **11.42 cycles** |
-| RUL R² (test: B0018) | **0.873** |
-| Top feature (importance) | Capacity\_Ah = 0.791 |
-
-### EOL Cycles (threshold: 1.40 Ah)
-
-| Cell | Discharge Cycles | Initial Cap. (Ah) | Final Cap. (Ah) | EOL Cycle |
-|------|-----------------|-------------------|-----------------|-----------|
-| B0005 | 168 | 1.857 | 1.325 | 125 |
-| B0006 | 168 | 2.035 | 1.186 | 109 |
-| B0007 | 168 | 1.891 | 1.433 | N/A |
-| B0018 | 132 | 1.855 | 1.341 | 97 |
+> **Note on v1 and v2.** Earlier releases described this work as "Physics-Informed AI". The
+> model contains no physical constraints, loss terms or governing equations, so that label
+> has been dropped. See `CHANGELOG.md` for every correction made in this release.
 
 ---
 
-## 📂 Repository Structure
+## Key results
+
+### Between-cell variation
+
+| Parameter | n | η² | ε² | ICC | Battery-level CV |
+|---|---|---|---|---|---|
+| Re | 579 | 0.600 | 0.634 | 0.899 | 13.6 % |
+| Rct | 579 | 0.480 | 0.455 | 0.854 | 9.6 % |
+| Capacity | 636 | 0.038 | 0.044 | 0.646 | 2.8 % |
+
+Cycle-level measurements within a cell are strongly autocorrelated (lag-1 ACF +0.65 to
++0.90; Durbin–Watson 0.19 to 0.69), so one-way ANOVA and Kruskal–Wallis do not provide
+valid inference here. Linear mixed-effects models with a random intercept per cell are used
+instead. See `results/tables/autocorrelation_diagnostics.csv`.
+
+### Cross-cell RUL prediction — complete four-fold leave-one-battery-out
+
+| Held-out cell | RMSE (cycles) | MAE | R² |
+|---|---|---|---|
+| B0005 | 27.41 | 21.39 | 0.390 |
+| B0006 | 5.13 | 3.06 | 0.970 |
+| B0007 | 32.24 | 29.75 | 0.438 |
+| B0018 | 11.42 | 9.02 | 0.873 |
+| **Mean** | **19.05** | **15.80** | **0.668** |
+
+v2.0.0 reported only the B0018 fold, which is the second most favourable of the four.
+
+### What the impedance features contribute
+
+| Feature set | Mean RMSE | Mean R² |
+|---|---|---|
+| Full feature set | 19.05 | 0.668 |
+| Capacity + cycle index | 19.66 | 0.642 |
+| Capacity only | 20.46 | 0.630 |
+| Linear capacity extrapolation (no training at all) | 22.19 | 0.467 |
+| No capacity | 25.18 | 0.461 |
+| Re and Rct only | 33.20 | −0.020 |
+
+End of life is defined by a capacity threshold, so a model predicting cycles to that
+threshold is largely predicting the capacity trajectory. The impedance features add 0.61
+cycles over capacity plus cycle index, which is far smaller than the spread across folds.
+
+### Re–Rct coupling
+
+Pooled R² = 0.937 (n = 579). Per cell: 0.894, 0.966, 0.959 and 0.146 for B0005, B0006,
+B0007 and B0018, with slopes 1.14, 1.53, 1.10 and 0.53. Centring within cells leaves
+R² = 0.900, so the coupling is genuine and not purely an aggregation artefact. Partialling
+out cycle index reduces the correlation to +0.783, +0.750, +0.655 and +0.242.
+
+B0018 spans only 7.0 mΩ of Re against 19.5 to 31.4 mΩ for the other cells. Correcting for
+that range restriction raises its coefficient from r = 0.381 to r = 0.904, so B0018 appears
+to differ mainly in how little it aged rather than in mechanism. See
+`results/tables/coupling_per_cell.csv`.
+
+---
+
+## Data caveats
+
+**Impedance sampling is uneven.** Sweeps are not recorded once per discharge cycle:
+
+| Cell | Discharge cycles | Impedance sweeps | Cycles carrying impedance | Distinct values |
+|---|---|---|---|---|
+| B0005 | 168 | 278 | 149 | 141 |
+| B0006 | 168 | 278 | 149 | 141 |
+| B0007 | 168 | 278 | 149 | 141 |
+| B0018 | 132 | **53** | 132 | **49** |
+
+Each discharge cycle is assigned the values of the nearest available sweep. For B0018 this
+means 132 rows built from 49 distinct measurements. Analyses sensitive to this are reported
+both on the full mapping and on the de-duplicated series.
+
+**B0007 is right-censored.** It never crosses the 1.40 Ah threshold; its minimum is
+1.4005 Ah at discharge cycle 166, 0.46 mAh above it, before recovering to 1.4325 Ah.
+Results under three end-of-life labels are in `results/tables/b0007_eol_sensitivity.csv`:
+
+| Assumed EOL for B0007 | Mean RMSE | Mean R² |
+|---|---|---|
+| 166 (cycle of minimum capacity) | 17.53 | 0.723 |
+| 169 (last observed + 1, used throughout) | 19.05 | 0.668 |
+| 178 (linear extrapolation) | 23.95 | 0.464 |
+
+---
+
+## Repository structure
 
 ```
 Battery-PIAI-ECM/
-│
 ├── README.md
+├── CHANGELOG.md
 ├── LICENSE
 ├── requirements.txt
 ├── citation.bib
 ├── .zenodo.json
-│
-├── notebooks/
-│   ├── 01_data_loading.ipynb          # MAT file parsing and cycle extraction
-│   ├── 02_eis_feature_extraction.ipynb # Re, Rct extraction from EIS sweeps
-│   ├── 03_statistical_analysis.ipynb   # ANOVA, Kruskal-Wallis, regression
-│   └── 04_rul_prediction.ipynb         # Random Forest LOBO evaluation
-│
 ├── src/
-│   ├── config.py                  # Global constants and file paths
-│   ├── data_loader.py             # MAT file loader and discharge cycle parser
-│   ├── eis_features.py            # Re, Rct extraction from EIS impedance data
-│   ├── capacity_tracking.py       # Coulomb counting for cycle capacity
-│   ├── statistics.py              # ANOVA, Kruskal-Wallis, linear regression
-│   ├── rul_model.py               # Random Forest + LOBO cross-validation
-│   └── pipeline.py                # End-to-end execution pipeline
-│
-├── results/
-│   ├── figures/                   # Generated plots (Figs 2–6)
-│   └── tables/                    # Statistical tables (ANOVA, regression, RUL)
+│   ├── analysis.py          # LOBO folds, ablation, baselines, B0007 sensitivity
+│   ├── export_tables.py     # mixed-effects models, effect sizes, pairwise, coupling
+│   └── figs.py, figs2.py    # Figures 1–8
+└── results/
+    ├── tables/
+    │   ├── between_cell_summary.csv
+    │   ├── autocorrelation_diagnostics.csv
+    │   ├── pairwise_holm_cliffs.csv
+    │   ├── coupling_per_cell.csv
+    │   ├── lobo_folds.csv
+    │   ├── ablation_baselines.csv
+    │   └── b0007_eol_sensitivity.csv
+    └── figures/
+        └── fig1_pipeline.png … fig8_ablation.png
 ```
 
----
-
-## 🧠 Methodology
-
-### 1. EIS Feature Extraction
-Re (electrolyte resistance) and Rct (charge-transfer resistance) are read directly from EIS sweeps performed between discharge cycles. No circuit fitting is applied — values come from the `Re` and `Rct` fields in the NASA MAT files.
-
-### 2. Capacity Tracking
-Cycle-by-cycle discharge capacity is tracked via Coulomb counting from constant-current (2 A) discharge profiles.
-
-### 3. Statistical Validation
-ANOVA and Kruskal-Wallis tests are applied across all four cells to verify that inter-cell differences in Re, Rct, and capacity are statistically significant (all p < .001).
-
-### 4. Re–Rct Coupling Analysis
-Linear regression between Re and Rct yields R² = 0.937 across 636 cycles, confirming their joint utility as compact SOH indicators consistent with SEI layer growth and active-material loss mechanisms.
-
-### 5. RUL Prediction
-A Random Forest regressor [Breiman 2001] is trained using a **Leave-One-Battery-Out (LOBO)** strategy:
-- **Train:** B0005, B0006, B0007
-- **Test:** B0018
-- **Features:** Re, Rct, Capacity\_Ah, CycleIndex, V\_mean, T\_mean, Duration\_s
-- **Result:** RMSE = 11.42 cycles, R² = 0.873
-
----
-
-## 🚀 How to Run
-
-### 1. Install requirements
+## Reproducing
 
 ```bash
 pip install -r requirements.txt
+python src/analysis.py        # folds, ablation, sensitivity
+python src/export_tables.py   # statistical tables
+python src/figs.py && python src/figs2.py
 ```
 
-### 2. Download NASA battery data
+Input is `results/tables/battery_processed.csv` from v2.0.0, itself derived from the NASA
+`.mat` files.
 
-Place `B0005.mat`, `B0006.mat`, `B0007.mat`, `B0018.mat` in a `data/` folder.  
-Dataset available at: [NASA Prognostics Center of Excellence](https://www.nasa.gov/intelligent-systems-division/discovery-and-systems-health/pcoe/pcoe-data-set-repository/)
+## Citation
 
-### 3. Run the full pipeline
-
-```bash
-python src/pipeline.py
-```
-
-### 4. Explore step-by-step notebooks
-
-Open the `notebooks/` folder in Jupyter Lab or Google Colab for interactive analysis.
-
----
-
-## 📦 Dataset
-
-**NASA Prognostics Center of Excellence Battery Dataset**
-
-- **Cells:** B0005, B0006, B0007, B0018 (18650 Li-ion, rated 2 Ah)
-- **Total discharge cycles:** 636
-- **Discharge protocol:** Constant current at 2 A to cut-off voltages (2.7 V / 2.5 V / 2.2 V / 2.5 V)
-- **EIS sweeps:** 0.1 Hz – 5 kHz between cycles
-- **EOL criterion:** Capacity fade to 1.40 Ah (30% loss from rated 2 Ah)
-- **Citation:** Saha & Goebel (2007), NASA Ames Prognostics Data Repository
-
----
-
-## 📜 Citation
-
-If you use this code or results in your work, please cite:
-
-### BibTeX (paper — under review)
-
-```bibtex
-@article{yaghi2026piai,
-  author   = {Samer Yaghi and Mohammed Alhanjouri},
-  title    = {Cycle-Resolved EIS Feature Extraction and Physics-Informed Machine
-              Learning for Lithium-Ion Battery Health and Life Prediction},
-  year     = {2026},
-  journal  = {Ionics (Under Review)},
-  keywords = {lithium-ion battery, EIS, physics-informed AI, RUL, NASA dataset,
-              ANOVA, Random Forest}
-}
-```
-
-### BibTeX (software — this repository)
-
-```bibtex
-@software{yaghi2026battery_piai,
-  author    = {Yaghi, Samer and Alhanjouri, Mohammed},
-  title     = {Cycle-Resolved EIS Feature Extraction and Physics-Informed Machine
-               Learning for Lithium-Ion Battery Health and Life Prediction},
-  year      = {2026},
-  version   = {2.0.0},
-  publisher = {Zenodo},
-  doi       = {10.5281/zenodo.20556874},
-  url       = {https://github.com/sameredu/Battery-PIAI-ECM}
-}
-```
-
----
-
-## 🔗 Related Links
-
-- 📄 ResearchGate: [researchgate.net/profile/Samer-Yaghi-2](https://www.researchgate.net/profile/Samer-Yaghi-2)
-- 🔬 ORCID: [orcid.org/0009-0001-0268-7163](https://orcid.org/0009-0001-0268-7163)
-- 🏛️ UCAS: [ucas.edu.ps](https://www.ucas.edu.ps)
-- 🏛️ IUG: [iugaza.edu.ps](https://www.iugaza.edu.ps)
-- 📦 Zenodo Archive: [doi.org/10.5281/zenodo.20556874](https://doi.org/10.5281/zenodo.20556874)
-
----
+See `citation.bib`. Please cite the release you used; results differ between v1, v2 and v3
+as recorded in `CHANGELOG.md`.
 
 ## License
 
-Released under the [MIT License](LICENSE).
-
----
-
-*Faculty of Information Technology · University College of Applied Sciences (UCAS) · Islamic University of Gaza (IUG) · Palestine · © 2026*
+MIT.

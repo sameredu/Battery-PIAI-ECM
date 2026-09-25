@@ -1,11 +1,15 @@
 {
-  "title": "Cycle-Resolved EIS Feature Extraction and Physics-Informed Machine Learning for Lithium-Ion Battery Health and Life Prediction",
-  "description": "This repository contains the full implementation of a Physics-Informed AI (PIAI) framework for lithium-ion battery degradation analysis and Remaining Useful Life (RUL) prediction. Electrolyte resistance Re and charge-transfer resistance Rct are extracted directly from Electrochemical Impedance Spectroscopy (EIS) measurements on the NASA battery dataset (B0005, B0006, B0007, B0018 — 636 discharge cycles). ANOVA and Kruskal-Wallis tests confirm statistically significant inter-cell differences (F_Re = 287.85, F_Rct = 176.91, all p < .001). Re and Rct exhibit strong positive coupling (R² = 0.937), confirming their utility as compact SOH indicators. A Leave-One-Battery-Out Random Forest regressor achieves RMSE = 11.42 cycles and R² = 0.873 on test cell B0018. The framework bridges physics-based electrochemical insight with interpretable machine learning for battery health monitoring.",
+  "title": "Cross Cell Evaluation of Electrochemical Impedance Features for Lithium Ion Battery Remaining Useful Life Prediction",
+  "description": "Evaluation of whether electrochemical impedance features transfer across lithium-ion cells. Electrolyte resistance Re and charge-transfer resistance Rct are read directly from the recorded impedance fields of the NASA dataset (B0005, B0006, B0007, B0018) with no circuit fitting. Between-cell variation is assessed with linear mixed-effects models because cycle-level measurements within a cell are strongly autocorrelated: intraclass correlation is 0.899 for Re and 0.854 for Rct against 0.646 for capacity, with eta-squared of 0.600, 0.480 and 0.038. A complete four-fold leave-one-battery-out random forest gives a mean RMSE of 19.05 cycles (range 5.13 to 32.24) and mean R-squared of 0.668. A feature ablation shows this is carried by the capacity trajectory: Re and Rct alone reach 33.20 cycles with mean R-squared of -0.020, while a training-free linear extrapolation of capacity reaches 22.19 cycles. Impedance features therefore discriminate strongly between cells but transfer poorly as RUL predictors. This release corrects reporting errors in v1.0.0 and v2.0.0 and discloses the impedance-to-cycle mapping; see CHANGELOG.md.",
   "creators": [
     {
       "name": "Yaghi, Samer",
       "affiliation": "University College of Applied Sciences (UCAS), Gaza, Palestine",
       "orcid": "0009-0001-0268-7163"
+    },
+    {
+      "name": "Awadallah, Mohammed A.",
+      "affiliation": "Al-Aqsa University, Gaza, Palestine"
     },
     {
       "name": "Alhanjouri, Mohammed",
@@ -24,16 +28,19 @@
     "charge-transfer-resistance",
     "remaining-useful-life",
     "RUL-prediction",
-    "physics-informed-AI",
     "battery-prognostics",
     "random-forest",
     "ANOVA",
     "state-of-health",
     "NASA-battery-dataset",
-    "machine-learning"
+    "machine-learning",
+    "cross-cell-validation",
+    "mixed-effects-models",
+    "leave-one-battery-out",
+    "feature-ablation"
   ],
   "communities": [],
-  "version": "2.0.0",
+  "version": "3.0.0",
   "language": "eng",
   "related_identifiers": [
     {

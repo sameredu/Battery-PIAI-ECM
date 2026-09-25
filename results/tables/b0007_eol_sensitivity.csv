@@ -1,0 +1,4 @@
+label,eol,mean_RMSE,mean_R2,B0007_RMSE,B0007_R2
+166 (cycle of minimum capacity),166,17.53,0.723,29.5,0.529
+169 (last observed + 1),169,19.05,0.668,32.24,0.438
+178 (linear extrapolation),178,23.95,0.464,40.68,0.105
