@@ -1,0 +1,42 @@
+cff-version: 1.2.0
+message: "If you use this software or its results, please cite it as below."
+title: "Cross Cell Evaluation of Electrochemical Impedance Features for Lithium Ion Battery Remaining Useful Life Prediction"
+type: software
+version: 3.0.2
+date-released: 2026-09-25
+license: MIT
+repository-code: "https://github.com/sameredu/Battery-PIAI-ECM"
+abstract: >-
+  Evaluation of whether electrochemical impedance features transfer across
+  lithium-ion cells. Electrolyte resistance Re and charge-transfer resistance
+  Rct are read directly from the recorded impedance fields of the NASA
+  Prognostics Center of Excellence dataset (B0005, B0006, B0007, B0018) with no
+  circuit fitting. Between-cell variation is assessed with linear mixed-effects
+  models because cycle-level measurements within a cell are strongly
+  autocorrelated: the intraclass correlation is 0.899 for Re and 0.854 for Rct
+  against 0.646 for capacity. A complete four-fold leave-one-battery-out random
+  forest gives a mean RMSE of 19.05 cycles and a mean R-squared of 0.668, and a
+  feature ablation shows this is carried by the capacity trajectory rather than
+  by the impedance features. Impedance therefore discriminates strongly between
+  nominally identical cells but transfers poorly as a predictor of remaining
+  useful life.
+keywords:
+  - lithium-ion batteries
+  - electrochemical impedance spectroscopy
+  - remaining useful life
+  - cross-cell validation
+  - mixed-effects models
+  - feature ablation
+  - NASA battery dataset
+authors:
+  - family-names: Yaghi
+    given-names: Samer
+    orcid: "https://orcid.org/0009-0001-0268-7163"
+    affiliation: "University College of Applied Sciences (UCAS), Gaza, Palestine"
+    email: syaghi@ucas.edu.ps
+  - family-names: Awadallah
+    given-names: "Mohammed A."
+    affiliation: "Al-Aqsa University, Gaza, Palestine"
+  - family-names: Alhanjouri
+    given-names: Mohammed
+    affiliation: "Islamic University of Gaza (IUG), Gaza, Palestine"
