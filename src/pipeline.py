@@ -1,3 +1,12 @@
+"""SUPERSEDED BY v3.0.0.
+
+This module implements the v2.0.0 analysis, which validated on a single held-out
+cell (B0018) and reported RMSE = 11.42 cycles. The manuscript now reports a complete
+four-fold leave-one-battery-out evaluation with a mean RMSE of 19.05 cycles.
+Use src/analysis.py. This file is retained so that the v2.0.0 results remain
+reproducible; see CHANGELOG.md.
+"""
+
 """
 pipeline.py
 -----------

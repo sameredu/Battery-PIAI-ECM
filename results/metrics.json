@@ -1,23 +1,79 @@
 {
-  "RMSE_cycles": 11.42,
-  "R2": 0.8728,
-  "test_battery": "B0018",
-  "train_batteries": [
-    "B0005",
-    "B0006",
-    "B0007"
-  ],
-  "EOL": {
-    "B0005": 125,
-    "B0006": 109,
-    "B0007": "N/A",
-    "B0018": 97
+  "release": "3.0.0",
+  "validation": "complete four-fold leave-one-battery-out",
+  "LOBO_folds": {
+    "B0005": {
+      "RMSE": 27.41,
+      "R2": 0.39
+    },
+    "B0006": {
+      "RMSE": 5.13,
+      "R2": 0.97
+    },
+    "B0007": {
+      "RMSE": 32.24,
+      "R2": 0.438
+    },
+    "B0018": {
+      "RMSE": 11.42,
+      "R2": 0.873
+    }
   },
-  "Re_Rct_coupling_R2": 0.9371,
+  "LOBO_summary": {
+    "mean_RMSE": 19.05,
+    "median_RMSE": 19.41,
+    "range_RMSE": [
+      5.13,
+      32.24
+    ],
+    "mean_R2": 0.668
+  },
+  "ablation_mean_RMSE": {
+    "full_feature_set": 19.05,
+    "capacity_and_cycle": 19.66,
+    "capacity_only": 20.46,
+    "linear_extrapolation_no_training": 22.19,
+    "no_capacity": 25.18,
+    "Re_and_Rct_only": 33.2
+  },
+  "between_cell": {
+    "Re": {
+      "n": 579,
+      "eta2": 0.6,
+      "ICC": 0.899
+    },
+    "Rct": {
+      "n": 579,
+      "eta2": 0.48,
+      "ICC": 0.854
+    },
+    "Capacity": {
+      "n": 636,
+      "eta2": 0.038,
+      "ICC": 0.646
+    }
+  },
+  "Re_Rct_coupling": {
+    "pooled_R2": 0.9371,
+    "within_cell_centred_R2": 0.9002,
+    "per_cell_R2": {
+      "B0005": 0.8935,
+      "B0006": 0.966,
+      "B0007": 0.9589,
+      "B0018": 0.1455
+    }
+  },
   "capacity_fade_R2": {
     "B0005": 0.9756,
     "B0006": 0.9637,
     "B0007": 0.9763,
     "B0018": 0.9401
-  }
+  },
+  "EOL_cycle": {
+    "B0005": 125,
+    "B0006": 109,
+    "B0007": "censored (min 1.4005 Ah at cycle 166)",
+    "B0018": 97
+  },
+  "note": "v2.0.0 reported RMSE = 11.42 cycles and R2 = 0.873 from the B0018 fold alone. Those values are the B0018 entry above. See CHANGELOG.md."
 }

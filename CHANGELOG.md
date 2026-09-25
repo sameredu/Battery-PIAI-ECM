@@ -1,5 +1,24 @@
 # Changelog
 
+## v3.0.1 — reproducibility fixes
+
+- **Scripts now run from a clone.** `src/analysis.py`, `src/export_tables.py` and `src/figs.py`
+  contained absolute paths from the authoring machine and could not be executed by anyone else.
+  All paths are now resolved relative to the repository root.
+- **One figure script.** `src/figs2.py` is merged into `src/figs.py`, which now produces exactly
+  Figures 1 to 8 under the numbering used in the manuscript. The previous pair wrote four
+  additional files under superseded names.
+- **`results/metrics.json` updated.** It still carried the v2.0.0 headline values
+  (RMSE = 11.42, R² = 0.873 from the B0018 fold alone). It now carries the four-fold results,
+  the ablation and the between-cell statistics, with a note recording what the earlier figures were.
+- **Superseded files labelled.** `src/pipeline.py`, `src/rul_model.py` and notebooks 03 and 04
+  implement the v2.0.0 single-fold analysis. They are retained so v2.0.0 stays reproducible and
+  now carry a header saying so. `results/README.md` states which outputs belong to which release.
+
+No numerical result changes in this release. Rerunning the corrected scripts from a clean clone
+reproduces every value in the manuscript.
+
+
 ## v3.0.0 — revised analyses for the Discover Electrochemistry major revision
 
 This release accompanies the revised manuscript. It corrects two reporting errors

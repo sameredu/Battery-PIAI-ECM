@@ -3,8 +3,15 @@ from scipy import stats
 import statsmodels.formula.api as smf
 from statsmodels.stats.stattools import durbin_watson
 from itertools import combinations
-O="/mnt/user-data/outputs/repo_v3/results/tables"
-d=pd.read_csv('/home/claude/repo/results/tables/battery_processed.csv')
+import os
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA = os.path.join(ROOT, "results", "tables", "battery_processed.csv")
+TABLES = os.path.join(ROOT, "results", "tables")
+FIGS = os.path.join(ROOT, "results", "figures")
+os.makedirs(TABLES, exist_ok=True); os.makedirs(FIGS, exist_ok=True)
+
+O = TABLES
+d=pd.read_csv(DATA)
 
 # 1. between-cell summary
 rows=[]
